@@ -366,9 +366,447 @@ new Specification<User>() {
 
 ## 1.一对一
 
+一对一关系这里定义了一个Person对象以及一个IDCard对象
+
+Person类：
+
+```java
+@Entity
+@Table(name="t_person")
+public class Person
+{
+    private int id;
+    private String name;
+    private IDCard card;
+    
+    @OneToOne(mappedBy="person")　　--->　　指定了OneToOne的关联关系，mappedBy同样指定由对方来进行维护关联关系
+    public IDCard getCard()
+    {
+        return card;
+    }
+    public void setCard(IDCard card)
+    {
+        this.card = card;
+    }
+    @Id
+    @GeneratedValue
+    public int getId()
+    {
+        return id;
+    }
+    public void setId(int id)
+    {
+        this.id = id;
+    }
+    public String getName()
+    {
+        return name;
+    }
+    public void setName(String name)
+    {
+        this.name = name;
+    }
+    
+}
+```
+
+IDCard类：
+
+```java
+@Entity
+@Table(name="t_id_card")
+public class IDCard
+{
+    private int id;
+    private String no;
+    private Person person;
+    
+    @Id
+    @GeneratedValue
+    public int getId()
+    {
+        return id;
+    }
+    public void setId(int id)
+    {
+        this.id = id;
+    }
+    public String getNo()
+    {
+        return no;
+    }
+    public void setNo(String no)
+    {
+        this.no = no;
+    }
+    @OneToOne　　--->　　OnetoOne指定了一对一的关联关系，一对一中随便指定一方来维护映射关系，这里选择IDCard来进行维护
+    @JoinColumn(name="pid")　　--->　　指定外键的名字 pid
+    public Person getPerson()
+    {
+        return person;
+    }
+    public void setPerson(Person person)
+    {
+        this.person = person;
+    }
+}
+```
+
+**注意**:在判断到底是谁维护关联关系时，可以通过查看外键，哪个实体类定义了外键，哪个类就负责维护关联关系。
+
 ## 2.多对一
 
+这里我们定义了两个实体类，一个是ClassRoom，一个是Student，这两者是一对多的关联关系。
+
+ClassRoom类：
+
+```java
+@Entity
+@Table(name="t_classroom")
+public class ClassRoom
+{
+    private Set<Student> students;
+    
+    public ClassRoom()
+    {
+        students = new HashSet<Student>();
+    }
+    
+    public void addStudent(Student student)
+    {
+        students.add(student);
+    }
+
+    @OneToMany(mappedBy="room")　　--->　　OneToMany指定了一对多的关系，mappedBy="room"指定了由多的那一方来维护关联关系，mappedBy指的是多的一方对1的这一方的依赖的属性，(注意：如果没有指定由谁来维护关联关系，则系统会给我们创建一张中间表)
+    @LazyCollection(LazyCollectionOption.EXTRA)　　--->　　LazyCollection属性设置成EXTRA指定了当如果查询数据的个数时候，只会发出一条 count(*)的语句，提高性能
+    public Set<Student> getStudents()
+    {
+        return students;
+    }
+
+    public void setStudents(Set<Student> students)
+    {
+        this.students = students;
+    }
+    
+}
+```
+
+[![复制代码](http://common.cnblogs.com/images/copycode.gif)](javascript:void(0);)
+
+Student类：
+
+[![复制代码](http://common.cnblogs.com/images/copycode.gif)](javascript:void(0);)
+
+```java
+@Entity
+@Table(name="t_student")
+public class Student
+{
+    private ClassRoom room;
+    
+    @ManyToOne(fetch=FetchType.LAZY)　　---> ManyToOne指定了多对一的关系，fetch=FetchType.LAZY属性表示在多的那一方通过延迟加载的方式加载对象(默认不是延迟加载)
+    @JoinColumn(name="rid")　　--->　　通过 JoinColumn 的name属性指定了外键的名称 rid　(注意：如果我们不通过JoinColum来指定外键的名称，系统会给我们声明一个名称)
+    public ClassRoom getRoom()
+    {
+        return room;
+    }
+    public void setRoom(ClassRoom room)
+    {
+        this.room = room;
+    }
+}
+```
+
 ## 3.多对多
+
+多对多这里通常有两种处理方式，一种是通过建立一张中间表，然后由任一一个多的一方来维护关联关系，另一种就是将多对多拆分成两个一对多的关联关系
+
+### 1. 不使用中间表的实体类
+
+采用中间表的时候由任一一个多的一方来维护关联关系
+
+Teacher类：
+
+```java
+@Entity
+@Table(name="t_teacher")
+public class Teacher
+{
+    private int id;
+    private String name;
+    private Set<Course> courses;
+    
+    public Teacher()
+    {
+        courses = new HashSet<Course>();
+    }
+    public void addCourse(Course course)
+    {
+        courses.add(course);
+    }
+    
+    @Id
+    @GeneratedValue
+    public int getId()
+    {
+        return id;
+    }
+    public void setId(int id)
+    {
+        this.id = id;
+    }
+    public String getName()
+    {
+        return name;
+    }
+    public void setName(String name)
+    {
+        this.name = name;
+    }
+    @ManyToMany(mappedBy="teachers")　　--->　　表示由Course那一方来进行维护
+    public Set<Course> getCourses()
+    {
+        return courses;
+    }
+    public void setCourses(Set<Course> courses)
+    {
+        this.courses = courses;
+    }
+    
+}
+```
+
+[![复制代码](http://common.cnblogs.com/images/copycode.gif)](javascript:void(0);)
+
+Course类：
+
+[![复制代码](http://common.cnblogs.com/images/copycode.gif)](javascript:void(0);)
+
+```java
+@Entity
+@Table(name="t_course")
+public class Course
+{
+    private int id;
+    private String name;
+    private Set<Teacher> teachers;
+    
+    public Course()
+    {
+        teachers = new HashSet<Teacher>();
+    }
+    public void addTeacher(Teacher teacher)
+    {
+        teachers.add(teacher);
+    }
+    @ManyToMany　　　--->　ManyToMany指定多对多的关联关系
+    @JoinTable(name="t_teacher_course", joinColumns={ @JoinColumn(name="cid")}, 
+    inverseJoinColumns={ @JoinColumn(name = "tid") })　　--->　　因为多对多之间会通过一张中间表来维护两表直接的关系，所以通过 JoinTable 这个注解来声明，name就是指定了中间表的名字，JoinColumns是一个 @JoinColumn类型的数组，表示的是我这方在对方中的外键名称，我方是Course，所以在对方外键的名称就是 rid，inverseJoinColumns也是一个 @JoinColumn类型的数组，表示的是对方在我这放中的外键名称，对方是Teacher，所以在我方外键的名称就是 tid
+    public Set<Teacher> getTeachers()
+    {
+        return teachers;
+    }
+
+    public void setTeachers(Set<Teacher> teachers)
+    {
+        this.teachers = teachers;
+    }
+
+    @Id
+    @GeneratedValue
+    public int getId()
+    {
+        return id;
+    }
+
+    public void setId(int id)
+    {
+        this.id = id;
+    }
+
+    public String getName()
+    {
+        return name;
+    }
+
+    public void setName(String name)
+    {
+        this.name = name;
+    }
+
+}
+```
+
+[![复制代码](http://common.cnblogs.com/images/copycode.gif)](javascript:void(0);)
+
+### 2. 采用中间表实体类
+
+把之前的ManyToMany拆分成两个One-to-Many的映射
+
+Admin类：
+
+[![复制代码](http://common.cnblogs.com/images/copycode.gif)](javascript:void(0);)
+
+```java
+@Entity
+@Table(name="t_admin")
+public class Admin
+{
+    private int id;
+    private String name;
+    private Set<AdminRole> ars;
+    public Admin()
+    {
+        ars = new HashSet<AdminRole>();
+    }
+    public void add(AdminRole ar)
+    {
+        ars.add(ar);
+    }
+    @Id
+    @GeneratedValue
+    public int getId()
+    {
+        return id;
+    }
+    public void setId(int id)
+    {
+        this.id = id;
+    }
+    public String getName()
+    {
+        return name;
+    }
+    public void setName(String name)
+    {
+        this.name = name;
+    }
+    @OneToMany(mappedBy="admin")　　--->　　OneToMany关联到了AdminRole这个类，由AdminRole这个类来维护多对一的关系，mappedBy="admin"
+    @LazyCollection(LazyCollectionOption.EXTRA)　　
+    public Set<AdminRole> getArs()
+    {
+        return ars;
+    }
+    public void setArs(Set<AdminRole> ars)
+    {
+        this.ars = ars;
+    }
+}
+```
+
+[![复制代码](http://common.cnblogs.com/images/copycode.gif)](javascript:void(0);)
+
+Role类：
+
+[![复制代码](http://common.cnblogs.com/images/copycode.gif)](javascript:void(0);)
+
+```java
+@Entity
+@Table(name="t_role")
+public class Role
+{
+    private int id;
+    private String name;
+    private Set<AdminRole> ars;
+    public Role()
+    {
+        ars = new HashSet<AdminRole>();
+    }
+    public void add(AdminRole ar)
+    {
+        ars.add(ar);
+    }
+    @Id
+    @GeneratedValue
+    public int getId()
+    {
+        return id;
+    }
+    public void setId(int id)
+    {
+        this.id = id;
+    }
+    public String getName()
+    {
+        return name;
+    }
+    public void setName(String name)
+    {
+        this.name = name;
+    }
+    @OneToMany(mappedBy="role")　　--->　　OneToMany指定了由AdminRole这个类来维护多对一的关联关系，mappedBy="role"
+    @LazyCollection(LazyCollectionOption.EXTRA)
+    public Set<AdminRole> getArs()
+    {
+        return ars;
+    }
+    public void setArs(Set<AdminRole> ars)
+    {
+        this.ars = ars;
+    }
+}
+```
+
+[![复制代码](http://common.cnblogs.com/images/copycode.gif)](javascript:void(0);)
+
+AdminRole类：
+
+[![复制代码](http://common.cnblogs.com/images/copycode.gif)](javascript:void(0);)
+
+```java
+@Entity
+@Table(name="t_admin_role")
+public class AdminRole
+{
+    private int id;
+    private String name;
+    private Admin admin;
+    private Role role;
+    @Id
+    @GeneratedValue
+    public int getId()
+    {
+        return id;
+    }
+    public void setId(int id)
+    {
+        this.id = id;
+    }
+    public String getName()
+    {
+        return name;
+    }
+    public void setName(String name)
+    {
+        this.name = name;
+    }
+    @ManyToOne　　--->　　ManyToOne关联到Admin
+    @JoinColumn(name="aid")　　
+    public Admin getAdmin()
+    {
+        return admin;
+    }
+    public void setAdmin(Admin admin)
+    {
+        this.admin = admin;
+    }
+    @ManyToOne　　--->　　
+    @JoinColumn(name="rid")
+    public Role getRole()
+    {
+        return role;
+    }
+    public void setRole(Role role)
+    {
+        this.role = role;
+    }
+}
+```
+
+[![复制代码](http://common.cnblogs.com/images/copycode.gif)](javascript:void(0);)
+
+**小技巧**:通过hibernate来进行插入操作的时候，不管是一对多、一对一还是多对多，都只需要记住一点，在哪个实体类声明了外键，就由哪个类来维护关系，在保存数据时，总是先保存的是没有维护关联关系的那一方的数据，后保存维护了关联关系的那一方的数据
 
 ## 4.中间表
 
