@@ -35,7 +35,7 @@ categories:
 
 ##### 3. errorPage
 
-如果这个页面抛出异常以后重定向到哪一个页面。
+如果这个页面抛出异常以后重定向到哪一个页面。11
 
 ##### 4. IsErrorPage=true
 
